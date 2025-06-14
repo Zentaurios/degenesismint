@@ -1,0 +1,53 @@
+'use client';
+
+import { useRef, useState } from 'react';
+
+export function AudioTestButton() {
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+
+  const toggleAudio = () => {
+    if (audioRef.current) {
+      if (isPlaying) {
+        audioRef.current.pause();
+        setIsPlaying(false);
+      } else {
+        audioRef.current.play();
+        setIsPlaying(true);
+      }
+    }
+  };
+
+  const handleAudioEnded = () => {
+    setIsPlaying(false);
+  };
+
+  return (
+    <div className="flex flex-col items-center space-y-4">
+      <button
+        onClick={toggleAudio}
+        className="cyber-button animate-teal-border-pulse px-6 py-3 text-lg"
+      >
+        {isPlaying ? '⏸️ Stop Audio Test' : '▶️ Test Audio Detection'}
+      </button>
+      
+      <audio
+        ref={audioRef}
+        onEnded={handleAudioEnded}
+        onPause={() => setIsPlaying(false)}
+        loop
+        preload="auto"
+      >
+        {/* Simple sine wave for testing */}
+        <source 
+          src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+3ztW8SBkCN0/LNeSsFJHfH8N2QQAoUXrTp66hVFApGn+3ztmU=" 
+          type="audio/wav" 
+        />
+      </audio>
+      
+      <p className="text-xs text-foreground/60 text-center max-w-xs">
+        Click to test audio detection. When audio plays, you should see enhanced animations and the green "Audio Detected" indicator.
+      </p>
+    </div>
+  );
+}
