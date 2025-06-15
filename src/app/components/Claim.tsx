@@ -342,7 +342,7 @@ export function Claim() {
       <div className="flex flex-col items-center">
         <div className="w-full max-w-7xl">
           <div className="flex justify-end mb-12">
-            <div className="animate-float">
+            <div className="animate-float z-50">
               <CustomConnectButton />
             </div>
           </div>
@@ -593,10 +593,13 @@ export function Claim() {
                                 <span>DEGEN SYNC IN PROGRESS...</span>
                               </>
                             ) : (
-                              <>
+                              <div className="flex flex-col items-center space-x-3">
+                                <div className="flex flex-row">
                                 <span>⚡</span>
                                 <span>DEGENIFY MY EXISTENCE</span>
-                              </>
+                                </div>
+                                <span className="text-xs">(That means buy the NFT)</span>
+                              </div>
                             )}
                           </span>
                           <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 to-teal-500/5 opacity-0 hover:opacity-100 transition-opacity duration-300 pointer-events-none select-none"></div>

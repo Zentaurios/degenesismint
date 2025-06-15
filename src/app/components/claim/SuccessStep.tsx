@@ -95,7 +95,7 @@ export function SuccessStep({ txHash, nftMetadata }: SuccessStepProps) {
             <div className="w-8 h-8 bg-gradient-to-r from-yellow-400 to-orange-400 rounded-full flex items-center justify-center animate-pulse">
               <span className="text-black text-sm font-bold">🏆</span>
             </div>
-            <span className="gradient-text font-bold text-sm">DEGENERATE STATUS: ACTIVATED</span>
+            <span className="gradient-text font-bold text-sm">DEGEN STATUS: ACTIVATED</span>
           </div>
           <p className="text-foreground/60 text-xs mt-2 text-center font-mono">
             Welcome to the degen collective, fellow trader.

@@ -119,10 +119,10 @@ const CoinAnimation = forwardRef<CoinAnimationRef, CoinAnimationProps>(({ parent
       spawnCoins();
     }, 200); // Spawn every 200ms for dense celebration
     
-    // Stop after 3 seconds
+    // Stop after 7.77 seconds
     setTimeout(() => {
       clearInterval(spawnInterval);
-    }, 3000);
+    }, 7770);
   }, [spawnCoins]);
 
   useImperativeHandle(ref, () => ({
@@ -185,20 +185,20 @@ const CoinAnimation = forwardRef<CoinAnimationRef, CoinAnimationProps>(({ parent
 
   return (
     <div 
-      className="fixed inset-0 pointer-events-none overflow-hidden z-50"
+      className="fixed inset-0 pointer-events-none overflow-hidden z-50 bg-black bg-opacity-20"
       aria-hidden="true"
     >
       {particles.map(particle => (
         <div
           key={particle.id}
-          className="absolute left-1/2 top-3/4"
+          className="fixed left-1/2 top-3/4 "
           style={{
             transform: `translate(${particle.x}px, ${particle.y}px) rotate(${particle.rotation}deg) scale(${particle.scale})`,
             opacity: particle.opacity,
           }}
         >
           {particle.isRocket ? (
-            <Rocket className="text-yellow-400" size={32} />
+            <Rocket className="text-Blue" size={32} />
           ) : (
             <CircleDollarSign className="text-green-400" size={28} />
           )}
