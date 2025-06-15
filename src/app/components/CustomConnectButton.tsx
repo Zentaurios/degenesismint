@@ -60,7 +60,7 @@ export function CustomConnectButton() {
                     theme={theme}
                     wallets={wallets}
                     connectButton={{
-                        label: "🚀 DEGEN LINK",
+                        label: "🚀 CONNECT WALLET",
                         style: {
                             borderRadius: "16px",
                             fontSize: "1.1rem",
@@ -77,7 +77,7 @@ export function CustomConnectButton() {
                     connectModal={{
                         size: "compact",
                         title: "🌌 Initialize Degen Connection",
-                        titleIcon: "⚡",
+                        titleIcon: "https://degenplays.com/logo.png",
                         showThirdwebBranding: false,
                         welcomeScreen: {
                             title: "Welcome to the Degen Network",

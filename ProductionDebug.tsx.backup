@@ -1,0 +1,336 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { client, nftContract, NFT_METADATA } from '@/lib/clients';
+import { getContract, readContract } from 'thirdweb';
+import { base } from 'thirdweb/chains';
+import { getNFT } from 'thirdweb/extensions/erc1155';
+
+interface DebugInfo {
+  clientId: string;
+  contractAddress: string;
+  chainId: number;
+  connectionTest: string;
+  metadataTest?: string;
+  uriTest?: string;
+  animationUrlTest?: string;
+  ipfsTest?: string;
+  baseUriTest?: string;
+  error?: string;
+  warnings: string[];
+}
+
+export function ProductionDebug() {
+  const [debugInfo, setDebugInfo] = useState<DebugInfo>({
+    clientId: '',
+    contractAddress: '',
+    chainId: 0,
+    connectionTest: '',
+    warnings: []
+  });
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  useEffect(() => {
+    async function runDiagnostics() {
+      const warnings: string[] = [];
+      
+      try {
+        // Basic info
+        const info: DebugInfo = {
+          clientId: process.env.NEXT_PUBLIC_THIRDWEB_CLIENT_ID?.slice(0, 8) + '...' || 'MISSING',
+          contractAddress: nftContract.address,
+          chainId: nftContract.chain?.id || 0,
+          connectionTest: 'Testing...',
+          warnings
+        };
+        
+        setDebugInfo(info);
+
+        // Test 1: Basic contract connection
+        console.log('🔍 Testing basic contract connection...');
+        const testContract = getContract({
+          client,
+          chain: base,
+          address: nftContract.address
+        });
+
+        try {
+          const result = await readContract({
+            contract: testContract,
+            method: 'function name() view returns (string)',
+            params: []
+          });
+          
+          setDebugInfo(prev => ({
+            ...prev,
+            connectionTest: `✅ Contract connected: ${result}`,
+          }));
+        } catch (e) {
+          warnings.push('Contract name() function failed');
+          setDebugInfo(prev => ({
+            ...prev,
+            connectionTest: '⚠️ Basic connection OK, name() failed',
+          }));
+        }
+
+        // Test 2: ERC1155 uri(tokenId) function - THE KEY TEST
+        console.log('🔍 Testing ERC1155 uri(tokenId) function...');
+        setDebugInfo(prev => ({ ...prev, uriTest: 'Testing uri(0)...' }));
+        
+        try {
+          const tokenUri = await readContract({
+            contract: testContract,
+            method: 'function uri(uint256) view returns (string)',
+            params: [BigInt(0)]
+          });
+          
+          console.log('Token URI result:', tokenUri);
+          
+          if (!tokenUri || tokenUri === '') {
+            warnings.push('uri(0) returned empty string');
+            setDebugInfo(prev => ({
+              ...prev,
+              uriTest: '❌ uri(0) returned empty',
+            }));
+          } else {
+            setDebugInfo(prev => ({
+              ...prev,
+              uriTest: `✅ uri(0): ${tokenUri.slice(0, 50)}...`,
+            }));
+
+            // Test 3: Fetch and parse the metadata
+            console.log('🔍 Testing metadata fetch...');
+            setDebugInfo(prev => ({ ...prev, metadataTest: 'Fetching metadata...' }));
+            
+            try {
+              // Handle IPFS URIs and HTTP URLs
+              let metadataUrl = tokenUri;
+              if (tokenUri.startsWith('ipfs://')) {
+                metadataUrl = tokenUri.replace('ipfs://', 'https://gateway.ipfscdn.io/ipfs/');
+              }
+              
+              const metadataResponse = await fetch(metadataUrl);
+              
+              if (!metadataResponse.ok) {
+                warnings.push(`Metadata fetch failed: ${metadataResponse.status}`);
+                setDebugInfo(prev => ({
+                  ...prev,
+                  metadataTest: `❌ Metadata fetch failed: ${metadataResponse.status}`,
+                }));
+              } else {
+                const metadata = await metadataResponse.json();
+                console.log('Fetched metadata:', metadata);
+                
+                setDebugInfo(prev => ({
+                  ...prev,
+                  metadataTest: `✅ Metadata loaded: ${metadata.name || 'No name'}`,
+                }));
+
+                // Test 4: Check animation_url accessibility
+                if (metadata.animation_url) {
+                  console.log('🔍 Testing animation_url accessibility...');
+                  setDebugInfo(prev => ({ ...prev, animationUrlTest: 'Testing animation_url...' }));
+                  
+                  try {
+                    let animationUrl = metadata.animation_url;
+                    if (animationUrl.startsWith('ipfs://')) {
+                      animationUrl = animationUrl.replace('ipfs://', 'https://gateway.ipfscdn.io/ipfs/');
+                    }
+                    
+                    const animationResponse = await fetch(animationUrl, { method: 'HEAD' });
+                    
+                    if (!animationResponse.ok) {
+                      warnings.push(`animation_url not accessible: ${animationResponse.status}`);
+                      setDebugInfo(prev => ({
+                        ...prev,
+                        animationUrlTest: `❌ animation_url failed: ${animationResponse.status}`,
+                      }));
+                    } else {
+                      const contentType = animationResponse.headers.get('content-type');
+                      setDebugInfo(prev => ({
+                        ...prev,
+                        animationUrlTest: `✅ animation_url OK (${contentType})`,
+                      }));
+                    }
+                  } catch (e) {
+                    warnings.push('animation_url CORS or network error');
+                    setDebugInfo(prev => ({
+                      ...prev,
+                      animationUrlTest: '❌ animation_url CORS/network error',
+                    }));
+                  }
+                } else {
+                  warnings.push('No animation_url in metadata');
+                  setDebugInfo(prev => ({
+                    ...prev,
+                    animationUrlTest: '⚠️ No animation_url found',
+                  }));
+                }
+              }
+            } catch (e) {
+              warnings.push('Metadata parsing failed');
+              setDebugInfo(prev => ({
+                ...prev,
+                metadataTest: '❌ Metadata fetch/parse failed',
+              }));
+            }
+          }
+        } catch (e) {
+          warnings.push('uri(tokenId) function not found or failed');
+          setDebugInfo(prev => ({
+            ...prev,
+            uriTest: '❌ uri(tokenId) function failed',
+          }));
+        }
+
+        // Test 5: IPFS gateway test
+        console.log('🔍 Testing IPFS gateway...');
+        setDebugInfo(prev => ({ ...prev, ipfsTest: 'Testing IPFS...' }));
+        
+        try {
+          const testIpfsResponse = await fetch('https://gateway.ipfscdn.io/ipfs/QmNLei78zWmzUdbeRB3CiUfAizWUrbeeZh5K1rhAQKCh51', {
+            method: 'HEAD',
+            mode: 'cors'
+          });
+          
+          if (testIpfsResponse.ok) {
+            setDebugInfo(prev => ({
+              ...prev,
+              ipfsTest: '✅ IPFS gateway accessible',
+            }));
+          } else {
+            warnings.push('IPFS gateway issues');
+            setDebugInfo(prev => ({
+              ...prev,
+              ipfsTest: '❌ IPFS gateway failed',
+            }));
+          }
+        } catch (e) {
+          warnings.push('IPFS gateway CORS/network error');
+          setDebugInfo(prev => ({
+            ...prev,
+            ipfsTest: '❌ IPFS gateway CORS error',
+          }));
+        }
+
+        // Test 6: Try thirdweb's getNFT function (official way)
+        console.log('🔍 Testing thirdweb getNFT function...');
+        setDebugInfo(prev => ({ ...prev, baseUriTest: 'Testing getNFT...' }));
+        
+        try {
+          const nftData = await getNFT({
+            contract: nftContract,
+            tokenId: BigInt(0)
+          });
+          
+          console.log('thirdweb getNFT result:', nftData);
+          
+          if (nftData && nftData.metadata) {
+            setDebugInfo(prev => ({
+              ...prev,
+              baseUriTest: `✅ thirdweb getNFT works: ${nftData.metadata.name}`,
+            }));
+          } else {
+            warnings.push('thirdweb getNFT returned no metadata');
+            setDebugInfo(prev => ({
+              ...prev,
+              baseUriTest: '❌ thirdweb getNFT: no metadata',
+            }));
+          }
+        } catch (e) {
+          warnings.push('thirdweb getNFT failed');
+          setDebugInfo(prev => ({
+            ...prev,
+            baseUriTest: '❌ thirdweb getNFT failed',
+          }));
+        }
+
+        // Update warnings
+        setDebugInfo(prev => ({ ...prev, warnings }));
+
+      } catch (error) {
+        console.error('Debug diagnostics failed:', error);
+        setDebugInfo(prev => ({
+          ...prev,
+          connectionTest: '❌ Diagnostics failed',
+          error: error instanceof Error ? error.message : String(error),
+          warnings
+        }));
+      }
+    }
+
+    if (typeof window !== 'undefined') {
+      runDiagnostics();
+    }
+  }, []);
+
+  // Show if there are errors, warnings, or in development
+  const shouldShow = process.env.NODE_ENV === 'development' || 
+                     debugInfo.error || 
+                     debugInfo.warnings.length > 0;
+
+  if (!shouldShow) {
+    return null;
+  }
+
+  return (
+    <div className="fixed bottom-4 right-4 bg-black/95 text-white rounded-lg text-xs max-w-sm z-50 border border-purple-500/30 shadow-xl">
+      <div 
+        className="p-4 cursor-pointer flex justify-between items-center"
+        onClick={() => setIsExpanded(!isExpanded)}
+      >
+        <h4 className="font-bold text-purple-400">
+          🔍 ERC1155 Debug {debugInfo.warnings.length > 0 ? `(⚠️ ${debugInfo.warnings.length})` : ''}
+        </h4>
+        <span className="text-purple-300">{isExpanded ? '▼' : '▶'}</span>
+      </div>
+      
+      {isExpanded && (
+        <div className="px-4 pb-4 space-y-2 max-h-96 overflow-y-auto">
+          <div className="space-y-1">
+            <p><span className="text-purple-300">Client ID:</span> {debugInfo.clientId}</p>
+            <p><span className="text-purple-300">Contract:</span> {debugInfo.contractAddress?.slice(0, 8)}...</p>
+            <p><span className="text-purple-300">Chain:</span> {debugInfo.chainId}</p>
+            <p><span className="text-purple-300">Connection:</span> {debugInfo.connectionTest}</p>
+            
+            {debugInfo.uriTest && (
+              <p><span className="text-purple-300">uri(0):</span> {debugInfo.uriTest}</p>
+            )}
+            
+            {debugInfo.metadataTest && (
+              <p><span className="text-purple-300">Metadata:</span> {debugInfo.metadataTest}</p>
+            )}
+            
+            {debugInfo.animationUrlTest && (
+              <p><span className="text-purple-300">Animation:</span> {debugInfo.animationUrlTest}</p>
+            )}
+            
+            {debugInfo.ipfsTest && (
+              <p><span className="text-purple-300">IPFS:</span> {debugInfo.ipfsTest}</p>
+            )}
+            
+            {debugInfo.baseUriTest && (
+              <p><span className="text-purple-300">getNFT:</span> {debugInfo.baseUriTest}</p>
+            )}
+          </div>
+          
+          {debugInfo.warnings.length > 0 && (
+            <div className="mt-3 p-2 bg-yellow-900/50 rounded">
+              <p className="text-yellow-400 font-semibold mb-1">⚠️ Warnings:</p>
+              {debugInfo.warnings.map((warning, i) => (
+                <p key={i} className="text-yellow-300 text-xs">• {warning}</p>
+              ))}
+            </div>
+          )}
+          
+          {debugInfo.error && (
+            <div className="mt-3 p-2 bg-red-900/50 rounded">
+              <p className="text-red-400 font-semibold">❌ Error:</p>
+              <p className="text-red-300 text-xs break-words">{debugInfo.error.slice(0, 200)}...</p>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}

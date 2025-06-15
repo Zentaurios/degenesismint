@@ -32,7 +32,7 @@ export const nftContract = getContract({
 export const NFT_PRICE_USDC = "69"; // 69 USDC per NFT
 export const NFT_METADATA = {
   name: "DeGenesis NFT Collection",
-  description: "A limited edition NFT with exclusive benefits",
+  description: "Only 1 NFT per 19,195,238 people on Earth.",
   image: "https://degenplays.com/logo.png",
   animation_url: "https://degenplays.com/logo.png",
   attributes: [
