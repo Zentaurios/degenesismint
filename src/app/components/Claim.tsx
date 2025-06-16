@@ -61,6 +61,7 @@ export function Claim() {
   });
 
   const [activeClaim, setActiveClaim] = useState<ClaimCondition | null>(null);
+  const [nextClaim, setNextClaim] = useState<ClaimCondition | null>(null);
   const [loading, setLoading] = useState(true);
   const [txState, setTxState] = useState<{
     status: "idle" | "processing" | "success" | "error";
@@ -99,6 +100,45 @@ export function Claim() {
         });
         setActiveClaim(activeCond);
 
+        // Get the active claim condition ID and fetch the next one
+        try {
+          const activeConditionId = await readContract({
+            contract: nftContract,
+            method: "function getActiveClaimConditionId(uint256 _tokenId) view returns (uint256)",
+            params: [tokenId]
+          });
+
+          // Fetch the next claim condition (active + 1)
+          const nextConditionId = activeConditionId + BigInt(1);
+          
+          try {
+            const nextCondition = await readContract({
+              contract: nftContract,
+              method: "function getClaimConditionById(uint256 _tokenId, uint256 _conditionId) view returns ((uint256 startTimestamp, uint256 maxClaimableSupply, uint256 supplyClaimed, uint256 quantityLimitPerWallet, bytes32 merkleRoot, uint256 pricePerToken, address currency, string metadata))",
+              params: [tokenId, nextConditionId]
+            });
+            
+            // Access properties directly from the returned object
+            const nextClaimCondition: ClaimCondition = {
+              id: nextConditionId,
+              startTimestamp: Number(nextCondition.startTimestamp),
+              maxClaimableSupply: nextCondition.maxClaimableSupply,
+              supplyClaimed: nextCondition.supplyClaimed,
+              quantityLimitPerWallet: nextCondition.quantityLimitPerWallet,
+              merkleRoot: nextCondition.merkleRoot,
+              pricePerToken: nextCondition.pricePerToken,
+              currency: nextCondition.currency,
+              metadata: nextCondition.metadata
+            };
+            
+            setNextClaim(nextClaimCondition);
+          } catch (nextClaimError) {
+            setNextClaim(null);
+          }
+        } catch (conditionIdError) {
+          // Failed to get active condition ID
+        }
+
         const nft = await getNFT({
           contract: nftContract,
           tokenId: tokenId,
@@ -127,6 +167,7 @@ export function Claim() {
           });
         }
         setActiveClaim(null);
+        setNextClaim(null);
       }
       setLoading(false);
     }
@@ -397,19 +438,30 @@ export function Claim() {
                     </div>
                     <p className="text-foreground/60 text-lg font-mono uppercase tracking-wider">Play for 🔊 🔊 🔊</p>
                   </div>
-                  {/* Countdown Timer */}
-                  {activeClaim?.startTimestamp && Number(activeClaim.startTimestamp) > Math.floor(Date.now() / 1000) && (
+                  {/* Countdown Timer - show for next claim if exists and is in future */}
+                  {nextClaim?.startTimestamp && Number(nextClaim.startTimestamp) > Math.floor(Date.now() / 1000) ? (
+                    <div className="glass-card-small p-6 lg:p-8 neon-border relative overflow-hidden group/timer">
+                      <div className="relative z-10">
+                        <div className="text-center mb-4">
+                          <span className="text-foreground/60 text-lg font-mono uppercase tracking-wider">Next Phase In</span>
+                        </div>
+                        <CountdownTimer targetTimestamp={BigInt(nextClaim.startTimestamp)} />
+                      </div>
+                      {/* Animated background */}
+                      <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 to-teal-500/5 opacity-0 group-hover/timer:opacity-100 transition-opacity duration-300"></div>
+                    </div>
+                  ) : activeClaim?.startTimestamp && Number(activeClaim.startTimestamp) > Math.floor(Date.now() / 1000) ? (
                     <div className="glass-card-small p-6 lg:p-8 neon-border relative overflow-hidden group/timer">
                       <div className="relative z-10">
                         <div className="text-center mb-4">
                           <span className="text-foreground/60 text-lg font-mono uppercase tracking-wider">Degen Launch In</span>
                         </div>
-                        <CountdownTimer targetTimestamp={BigInt(activeClaim.startTimestamp || 0)} />
+                        <CountdownTimer targetTimestamp={BigInt(activeClaim.startTimestamp)} />
                       </div>
                       {/* Animated background */}
                       <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 to-teal-500/5 opacity-0 group-hover/timer:opacity-100 transition-opacity duration-300"></div>
                     </div>
-                  )}
+                  ) : null}
                   </div>
                 </div>
 
@@ -420,6 +472,9 @@ export function Claim() {
                       <h1 className="text-4xl lg:text-6xl font-bold mb-6 gradient-text animate-gradient leading-tight pb-2">
                         {NFT_METADATA.name}
                       </h1>
+                      <span className="absolute top-1 right-1 bg-Teal text-Purple animate-pulse shadow-lg shadow-green-400/50 py-1 px-3">
+                      Active Phase
+                      </span>
                       <div className="absolute -top-2 -left-2 w-4 h-4 bg-teal-400 rounded-full animate-ping opacity-75"></div>
                       <div className="absolute -top-2 -left-2 w-4 h-4 bg-teal-400 rounded-full"></div>
                     </div>

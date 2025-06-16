@@ -64,7 +64,7 @@ export function CountdownTimer({ targetTimestamp }: CountdownTimerProps) {
       <div className={`text-4xl lg:text-6xl font-mono font-bold tracking-wider transition-all duration-100 ${
         glitch ? 'animate-glitch' : ''
       }`}>
-        <div className="flex items-center justify-center space-x-4">
+        <div className="flex flex-wrap items-center justify-center space-x-1 md:space-x-4 text-sm md:text-3xl">
           <div className="text-center">
             <div className="gradient-text">{timeLeft.days.toString().padStart(2, '0')}</div>
             <div className="text-sm text-foreground/60 uppercase tracking-wider">days</div>
@@ -88,7 +88,7 @@ export function CountdownTimer({ targetTimestamp }: CountdownTimerProps) {
       </div>
       {/* Glitch overlay */}
       <div className={`absolute inset-0 bg-gradient-to-r from-purple-500/20 to-teal-500/20 mix-blend-overlay pointer-events-none ${
-        glitch ? 'opacity-100' : 'opacity-0'
+        glitch ? 'opacity-50' : 'opacity-0'
       } transition-opacity duration-100`} />
     </div>
   );

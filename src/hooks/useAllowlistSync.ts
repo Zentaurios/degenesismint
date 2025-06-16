@@ -28,7 +28,7 @@ interface ProofData {
 
 interface AllowlistSyncState {
   isLoading: boolean;
-  isAllowed: boolean | null; // null = unknown, true = allowed, false = not allowed
+  isAllowed: boolean | null;
   allowlistEntry: AllowlistEntry | null;
   merkleProof: ProofData | null;
   error: string | null;
@@ -174,7 +174,7 @@ export function useAllowlistSync({
             merkleProof: proofData,
           }));
 
-        } catch {
+        } catch (verificationError) {
           // If on-chain verification fails but user has a valid proof, assume they're eligible
           // This could happen due to network issues or if they've already claimed
           setState(prev => ({
