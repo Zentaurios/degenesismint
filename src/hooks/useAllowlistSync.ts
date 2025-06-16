@@ -174,7 +174,7 @@ export function useAllowlistSync({
             merkleProof: proofData,
           }));
 
-        } catch (verificationError) {
+        } catch {
           // If on-chain verification fails but user has a valid proof, assume they're eligible
           // This could happen due to network issues or if they've already claimed
           setState(prev => ({

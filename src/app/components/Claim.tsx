@@ -132,11 +132,11 @@ export function Claim() {
             };
             
             setNextClaim(nextClaimCondition);
-          } catch (nextClaimError) {
+          } catch {
             setNextClaim(null);
           }
-        } catch (conditionIdError) {
-          // Failed to get active condition ID
+        } catch {
+          setNextClaim(null);
         }
 
         const nft = await getNFT({
